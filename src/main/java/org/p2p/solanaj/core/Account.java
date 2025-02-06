@@ -143,4 +143,13 @@ public class Account {
     public String getPrivateKeyBase58() {
         return Base58.encode(this.getSecretKey());
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if ( (obj == null) || !(obj instanceof Account) )
+            return false;
+
+        Account other = (Account)obj;
+        return this.getPublicKey().equals(other.getPublicKey());
+    }
 }

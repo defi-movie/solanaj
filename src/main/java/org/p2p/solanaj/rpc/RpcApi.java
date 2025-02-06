@@ -16,6 +16,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class RpcApi {
+
+    private static final int MAX_BASE64_TX_LENGTH = 1_232; // see: https://solana.com/docs/core/transactions#transaction-size
+
     private RpcClient client;
 
     public RpcApi(RpcClient client) {
@@ -82,12 +85,26 @@ public class RpcApi {
         byte[] serializedTransaction = transaction.serialize();
 
         String base64Trx = Base64.getEncoder().encodeToString(serializedTransaction);
+        if ( base64Trx.length() >= MAX_BASE64_TX_LENGTH )
+            throw new RpcException("transaction message length " + base64Trx.length() + " exceeds max allowed");
 
         List<Object> params = new ArrayList<>();
 
         params.add(base64Trx);
         params.add(rpcSendTransactionConfig);
 
+        return client.call("sendTransaction", params, String.class);
+    }
+
+    public String sendSignedTransaction(String signedTxBase64) throws RpcException {
+        Objects.requireNonNull(signedTxBase64, "signedTxBase64 can not  be null");
+
+        if ( signedTxBase64.length() > MAX_BASE64_TX_LENGTH )
+            throw new RpcException("invalid signed tx message length");
+
+        List<Object> params = new ArrayList<>();
+        params.add(signedTxBase64);
+        params.add(new RpcSendTransactionConfig());
         return client.call("sendTransaction", params, String.class);
     }
 

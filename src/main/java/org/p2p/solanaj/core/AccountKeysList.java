@@ -25,7 +25,27 @@ public class AccountKeysList {
         return accountKeysList;
     }
 
-    private static final Comparator<AccountMeta> metaComparator = Comparator
-        .comparing(AccountMeta::isSigner).reversed()
-        .thenComparing(AccountMeta::isWritable).reversed();
+//    private static final Comparator<AccountMeta> metaComparator = Comparator
+//        .comparing(AccountMeta::isSigner).reversed()
+//        .thenComparing(AccountMeta::isWritable).reversed();
+
+    private static final Comparator<AccountMeta> metaComparator = new Comparator<AccountMeta>() {
+
+        @Override
+        public int compare(AccountMeta am1, AccountMeta am2) {
+
+            int cmpSigner = am1.isSigner() == am2.isSigner() ? 0 : am1.isSigner() ? -1 : 1;
+            if (cmpSigner != 0) {
+                return cmpSigner;
+            }
+
+            int cmpkWritable = am1.isWritable() == am2.isWritable() ? 0 : am1.isWritable() ? -1 : 1;
+            if (cmpkWritable != 0) {
+                return cmpkWritable;
+            }
+
+            return Integer.compare(cmpSigner, cmpkWritable);
+        }
+    };
+
 }

@@ -45,7 +45,7 @@ public class Message {
 
     public Message() {
         this.accountKeys = new AccountKeysList();
-        this.instructions = new ArrayList<TransactionInstruction>();
+        this.instructions = new ArrayList<>();
     }
 
     public Message addInstruction(TransactionInstruction instruction) {
@@ -80,16 +80,26 @@ public class Message {
         int compiledInstructionsLength = 0;
         List<CompiledInstruction> compiledInstructions = new ArrayList<CompiledInstruction>();
 
-        for (TransactionInstruction instruction : instructions) {
+        PublicKey instructionAccount;
+        TransactionInstruction instruction;
+        for (int ix = 0; ix<instructions.size(); ix++) {
+            instruction = instructions.get(ix);
+
             int keysSize = instruction.getKeys().size();
 
             byte[] keyIndices = new byte[keysSize];
             for (int i = 0; i < keysSize; i++) {
-                keyIndices[i] = (byte) findAccountIndex(keysList, instruction.getKeys().get(i).getPublicKey());
+                instructionAccount = instruction.getKeys().get(i).getPublicKey();
+                keyIndices[i] = (byte) findAccountIndex(keysList, instructionAccount);
+                if ( keyIndices[i] < 0 )
+                    throw new AccountNotFound("account " + instructionAccount + " (" + i + ") not found for instruction #" + ix);
             }
 
             CompiledInstruction compiledInstruction = new CompiledInstruction();
             compiledInstruction.programIdIndex = (byte) findAccountIndex(keysList, instruction.getProgramId());
+            if ( compiledInstruction.programIdIndex < 0 )
+                throw new AccountNotFound("programId " + instruction.getProgramId() + " not found in accounts list for instruction #" + ix);
+
             compiledInstruction.keyIndicesCount = ShortvecEncoding.encodeLength(keysSize);
             compiledInstruction.keyIndices = keyIndices;
             compiledInstruction.dataLength = ShortvecEncoding.encodeLength(instruction.getData().length);
@@ -143,13 +153,16 @@ public class Message {
         return out.array();
     }
 
-    protected void setFeePayer(Account feePayer) {
+    public void setFeePayer(Account feePayer) {
         this.feePayer = feePayer;
+    }
+
+    public Account getFeePayer() {
+        return this.feePayer;
     }
 
     private List<AccountMeta> getAccountKeys() {
         List<AccountMeta> keysList = accountKeys.getList();
-
         // Check whether custom sorting is needed. The `getAccountKeys()` method returns a reversed list of accounts, with signable and mutable accounts at the end, but the fee is placed first. When a transaction involves multiple accounts that need signing, an incorrect order can cause bugs. Change to custom sorting based on the contract order.
         boolean needSort = keysList.stream().anyMatch(accountMeta -> accountMeta.getSort() < Integer.MAX_VALUE);
         if (needSort) {
@@ -160,12 +173,14 @@ public class Message {
         }
 
         int feePayerIndex = findAccountIndex(keysList, feePayer.getPublicKey());
-        List<AccountMeta> newList = new ArrayList<AccountMeta>();
-        AccountMeta feePayerMeta = keysList.get(feePayerIndex);
-        newList.add(new AccountMeta(feePayerMeta.getPublicKey(), true, true));
-        keysList.remove(feePayerIndex);
-        newList.addAll(keysList);
+        if ( feePayerIndex != -1 ) {
+            // allow for non-participating account to pay fees on transaction
+            keysList.remove(feePayerIndex);
+        }
 
+        List<AccountMeta> newList = new ArrayList<AccountMeta>();
+        newList.add(new AccountMeta(feePayer.getPublicKey(), true, true));
+        newList.addAll(keysList);
         return newList;
     }
 
@@ -176,6 +191,7 @@ public class Message {
             }
         }
 
-        throw new RuntimeException("unable to find account index");
+        // throw new RuntimeException("unable to find account index");
+        return  -1;
     }
 }

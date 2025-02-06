@@ -1,10 +1,7 @@
 package org.p2p.solanaj.core;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import org.bitcoinj.core.Base58;
 import org.p2p.solanaj.utils.ShortvecEncoding;
@@ -19,7 +16,7 @@ public class Transaction {
     public static final int SIGNATURE_LENGTH = 64;
 
     private final Message message;
-    private final List<String> signatures;
+    private final List<byte[]> signatures;
     private byte[] serializedMessage;
 
     /**
@@ -54,6 +51,12 @@ public class Transaction {
         message.setRecentBlockHash(recentBlockhash);
     }
 
+
+    public Transaction setFeePayer(Account feePayer) {
+        this.message.setFeePayer(feePayer);
+        return this;
+    }
+
     /**
      * Signs the transaction with a single signer.
      *
@@ -75,8 +78,16 @@ public class Transaction {
             throw new IllegalArgumentException("No signers provided");
         }
 
-        Account feePayer = signers.get(0);
-        message.setFeePayer(feePayer);
+        Account feePayer = message.getFeePayer();
+        if ( feePayer == null ) {
+            // if fee payer not set, then pick the first account from signers as fee payer
+            feePayer = signers.get(0);
+            message.setFeePayer(feePayer);
+        } else {
+            // if fee payer is set, confirm that it is included as a signer
+            if ( !signers.contains(feePayer) )
+                throw new AccountNotFound("feePayer not included in signers list");
+        }
 
         serializedMessage = message.serialize();
 
@@ -84,7 +95,8 @@ public class Transaction {
             try {
                 TweetNaclFast.Signature signatureProvider = new TweetNaclFast.Signature(new byte[0], signer.getSecretKey());
                 byte[] signature = signatureProvider.detached(serializedMessage);
-                signatures.add(Base58.encode(signature));
+                //signatures.add(Base58.encode(signature));
+                signatures.add(signature);
             } catch (Exception e) {
                 throw new RuntimeException("Error signing transaction", e); // Improve exception handling
             }
@@ -106,13 +118,26 @@ public class Transaction {
 
         out.put(signaturesLength);
 
-        for (String signature : signatures) {
-            byte[] rawSignature = Base58.decode(signature);
-            out.put(rawSignature);
+        for (byte[] signature : signatures) {
+            //byte[] rawSignature = Base58.decode(signature);
+            //out.put(rawSignature);
+            out.put(signature);
         }
 
         out.put(serializedMessage);
 
         return out.array();
+    }
+
+    protected Message getMessage() {
+        return message;
+    }
+
+    protected List<byte[]> getSignatures() {
+        return signatures;
+    }
+
+    protected byte[] getSerializedMessage() {
+        return serializedMessage;
     }
 }

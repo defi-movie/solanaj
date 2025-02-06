@@ -111,7 +111,11 @@ public class SubscriptionWebSocketClient extends WebSocketClient {
         try {
             URI endpointURI = new URI(endpoint);
             String scheme = "https".equals(endpointURI.getScheme()) ? "wss" : "ws";
-            URI serverURI = new URI(scheme + "://" + endpointURI.getHost());
+
+            //URI serverURI = new URI(scheme + "://" + endpointURI.getHost());
+            // temp
+            String wsUrl = "ws://127.0.0.1:8900";
+            URI serverURI = new URI(wsUrl);
             SubscriptionWebSocketClient instance = new SubscriptionWebSocketClient(serverURI);
             instance.connect();
             return instance;
@@ -366,6 +370,8 @@ public class SubscriptionWebSocketClient extends WebSocketClient {
      * @param listener The listener for notification events
      */
     public void addSubscription(RpcRequest rpcRequest, NotificationEventListener listener) {
+        // temp
+        LOGGER.info("adding subscription");
         String subscriptionId = rpcRequest.getId();
         subscriptionLock.lock();
         try {
@@ -375,7 +381,9 @@ public class SubscriptionWebSocketClient extends WebSocketClient {
         } finally {
             subscriptionLock.unlock();
         }
+        LOGGER.info("updating subscriptions");
         updateSubscriptions();
+        LOGGER.info("updated subscriptions");
     }
 
     /**
@@ -398,6 +406,7 @@ public class SubscriptionWebSocketClient extends WebSocketClient {
      */
     @Override
     public void onMessage(String message) {
+        LOGGER.info("on Subs message " + message);
         try {
             JsonAdapter<RpcResponse<Long>> resultAdapter = moshi.adapter(
                     Types.newParameterizedType(RpcResponse.class, Long.class));
@@ -421,6 +430,7 @@ public class SubscriptionWebSocketClient extends WebSocketClient {
      * @param rpcResult The RPC response
      */
     private void handleSubscriptionResponse(RpcResponse<Long> rpcResult) {
+        LOGGER.info("handling response " + rpcResult.getResult() + " "  + rpcResult);
         String rpcResultId = rpcResult.getId();
         if (subscriptionIds.containsKey(rpcResultId)) {
             subscriptionIds.put(rpcResultId, rpcResult.getResult());
@@ -442,6 +452,8 @@ public class SubscriptionWebSocketClient extends WebSocketClient {
      * @throws Exception If an error occurs while processing the notification
      */
     private void handleNotification(String message) throws Exception {
+        LOGGER.info("on Subs notificasion " + message);
+
         JsonAdapter<RpcNotificationResult> notificationResultAdapter = moshi.adapter(RpcNotificationResult.class);
         RpcNotificationResult result = notificationResultAdapter.fromJson(message);
         if (result != null) {
@@ -558,6 +570,7 @@ public class SubscriptionWebSocketClient extends WebSocketClient {
      */
     private void updateSubscriptions() {
         if (isOpen()) {
+            LOGGER.info("updatin");
             JsonAdapter<RpcRequest> rpcRequestJsonAdapter = moshi.adapter(RpcRequest.class);
             for (SubscriptionParams sub : subscriptions.values()) {
                 send(rpcRequestJsonAdapter.toJson(sub.request));
@@ -624,6 +637,7 @@ public class SubscriptionWebSocketClient extends WebSocketClient {
     }
 
     public void unsubscribe(String subscriptionId) {
+        LOGGER.info("unsubscribe " + subscriptionId);
         SubscriptionParams params = activeSubscriptions.remove(subscriptionId);
         if (params != null) {
             // Send an unsubscribe request to the server

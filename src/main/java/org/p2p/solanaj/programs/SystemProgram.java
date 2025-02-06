@@ -73,8 +73,8 @@ public class SystemProgram {
         }
 
         List<AccountMeta> keys = Arrays.asList(
-            new AccountMeta(fromPublicKey, true, true),
-            new AccountMeta(newAccountPublicKey, true, true)
+            new AccountMeta(fromPublicKey, true, true, 0),
+            new AccountMeta(newAccountPublicKey, true, true, 1)
         );
 
         byte[] data = new byte[UINT32_SIZE + INT64_SIZE + INT64_SIZE + PUBKEY_SIZE]; // 4 + 8 + 8 + 32 = 52 bytes
