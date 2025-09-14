@@ -25,10 +25,10 @@ public class TokenManager {
         // SPL token instruction
         transaction.addInstruction(
                 TokenProgram.transfer(
-                        source,
+                        owner.getPublicKey(),
                         destination,
-                        amount,
-                        owner.getPublicKey()
+                        source,
+                        amount
                 )
         );
 

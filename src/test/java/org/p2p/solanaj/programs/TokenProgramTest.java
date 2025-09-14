@@ -114,7 +114,7 @@ public class TokenProgramTest {
         long amount = 1000000000;  // 1 billion (assuming 9 decimals)
         PublicKey owner = new PublicKey("HNGVuL5kqjDehw7KR63w9gxow32sX6xzRNgLb8GkbwCM");
 
-        TransactionInstruction instruction = TokenProgram.transfer(source, destination, amount, owner);
+        TransactionInstruction instruction = TokenProgram.transfer(owner, destination, source, amount);
 
         assertEquals(TokenProgram.PROGRAM_ID, instruction.getProgramId());
         assertEquals(3, instruction.getKeys().size());

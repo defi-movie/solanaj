@@ -129,6 +129,34 @@ public class Transaction {
         return out.array();
     }
 
+
+    public byte[] serializeForUserSigning() {
+        int signaturesSize = signatures.size() + 1;
+        byte[] signaturesLength = ShortvecEncoding.encodeLength(signaturesSize);
+
+        // Calculate total size before allocating ByteBuffer
+        int totalSize = signaturesLength.length + signaturesSize * SIGNATURE_LENGTH + serializedMessage.length;
+        ByteBuffer out = ByteBuffer.allocate(totalSize);
+
+        out.put(signaturesLength);
+        byte[] last = null;
+
+        for (byte[] signature : signatures) {
+            //byte[] rawSignature = Base58.decode(signature);
+            //out.put(rawSignature);
+            out.put(signature);
+            if ( last == null ) {
+                last = new byte[signature.length];
+            }
+        }
+        out.put(last);
+
+        out.put(serializedMessage);
+
+
+        return out.array();
+    }
+
     protected Message getMessage() {
         return message;
     }

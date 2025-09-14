@@ -52,7 +52,9 @@ public class RpcApi {
             params.add(Map.of("commitment", commitment.getValue()));
         }
 
-        return client.call("getRecentBlockhash", params, RecentBlockhash.class).getValue().getBlockhash();
+        //return client.call("getRecentBlockhash", params, RecentBlockhash.class).getValue().getBlockhash();
+
+        return client.call("getLatestBlockhash", params, RecentBlockhash.class).getValue().getBlockhash();
     }
 
     public String sendTransaction(Transaction transaction, Account signer, String recentBlockHash) throws

@@ -1,5 +1,6 @@
 package org.p2p.solanaj.programs;
 
+import org.p2p.solanaj.core.Account;
 import org.p2p.solanaj.core.AccountMeta;
 import org.p2p.solanaj.core.PublicKey;
 import org.p2p.solanaj.core.TransactionInstruction;
@@ -45,9 +46,12 @@ public class TokenProgram extends Program {
      * @param owner account/private key signing this transaction
      * @return transaction id for explorer
      */
-    public static TransactionInstruction transfer(PublicKey source, PublicKey destination, long amount, PublicKey owner) {
+    public static TransactionInstruction transfer(
+            PublicKey owner,
+            PublicKey destination,
+            PublicKey source,
+            long amount) {
         final List<AccountMeta> keys = new ArrayList<>();
-
         keys.add(new AccountMeta(source,false, true));
         keys.add(new AccountMeta(destination,false, true));
         keys.add(new AccountMeta(owner,true, false));
